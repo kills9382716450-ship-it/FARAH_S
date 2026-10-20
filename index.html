@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حكاية فرح وأحمد | الفيلم السينمائي</title>
+
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@300;400;600;700;900&family=Reem+Kufi:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        roseGold: '#e0a96d',
+                        deepCrimson: '#c9184a',
+                        passionPink: '#ff4d6d',
+                        darkBg: '#080608',
+                        cardBg: 'rgba(20, 12, 18, 0.75)'
+                    },
+                    fontFamily: {
+                        amiri: ['Amiri', 'serif'],
+                        cairo: ['Cairo', 'sans-serif'],
+                        kufi: ['Reem Kufi', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base styles & Custom Scrollbar */
+        body {
+            background-color: #080608;
+            color: #f8f9fa;
+            font-family: 'Cairo', sans-serif;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #080608;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c9184a;
+            border-radius: 4px;
+        }
+
+        /* Ambient background glow */
+        .ambient-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80vw;
+            height: 80vh;
+            background: radial-gradient(circle, rgba(255, 77, 109, 0.12) 0%, rgba(201, 24, 74, 0.04) 50%, rgba(0,0,0,0) 80%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Glassmorphism styling */
+        .glass-card {
+            background: rgba(22, 14, 20, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 77, 109, 0.25);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 77, 109, 0.15);
+        }
+
+        /* Gold glow text */
+        .text-glow-gold {
+            text-shadow: 0 0 15px rgba(224, 169, 109, 0.6), 0 0 30px rgba(224, 169, 109, 0.3);
+        }
+        
+        .text-glow-pink {
+            text-shadow: 0 0 20px rgba(255, 77, 109, 0.7), 0 0 40px rgba(201, 24, 74, 0.4);
+        }
+
+        /* Pulsing Cinema Progress Bar */
+        .progress-line {
+            transition: width 0.1s linear;
+        }
+
+        /* Film roll border animation */
+        .film-border {
+            border-image: repeating-linear-gradient(90deg, #ff4d6d 0, #ff4d6d 15px, transparent 0, transparent 30px) 1;
+        }
+
+        /* Subtle floating quote text */
+        .quote-pulse {
+            animation: pulseFade 4s ease-in-out infinite;
+        }
+
+        @keyframes pulseFade {
+            0%, 100% { opacity: 0.3; transform: scale(0.98); }
+            50% { opacity: 0.95; transform: scale(1.02); }
+        }
+
+        /* Canvas z-index */
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body class="min-h-screen relative select-none">
+
+    <!-- Interactive Canvas Particle/Hearts Overlay -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Ambient Glowing Background -->
+    <div class="ambient-glow"></div>
+
+    <!-- AUDIO SYSTEM -->
+    <!-- Direct Royalty-Free Music Fallbacks + Web Audio API Backup -->
+    <audio id="mainAudio" loop preload="auto">
+        <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf756.mp3?filename=romantic-investigation-110821.mp3" type="audio/mpeg">
+        <source src="https://assets.mixkit.co/music/preview/mixkit-a-very-happy-gospel-114.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- FLOATING MUSIC & AUDIO CONTROLLER -->
+    <div id="audioWidget" class="fixed bottom-6 left-6 z-50 flex items-center space-x-3 space-x-reverse bg-neutral-900/90 border border-passionPink/40 rounded-full px-4 py-2 shadow-2xl backdrop-blur-md opacity-0 transition-opacity duration-1000">
+        <button id="playToggleBtn" onclick="toggleAudio()" class="w-10 h-10 rounded-full bg-passionPink text-white flex items-center justify-center hover:scale-110 transition-transform shadow-lg focus:outline-none">
+            <i class="fa-solid fa-pause" id="audioIcon"></i>
+        </button>
+        <div class="flex flex-col pr-1">
+            <span class="text-xs text-roseGold font-semibold">الموسيقى السينمائية</span>
+            <span class="text-[10px] text-gray-400" id="audioStatusText">شغالة الآن 🎵</span>
+        </div>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.8" oninput="changeVolume(this.value)" class="w-16 accent-passionPink cursor-pointer">
+    </div>
+
+    <!-- ========================================== -->
+    <!-- OVERTURE 1: ENTRY SCREEN (COVER LANDING)   -->
+    <!-- ========================================== -->
+    <div id="coverOverlay" class="fixed inset-0 z-50 flex flex-col justify-center items-center bg-darkBg px-4 text-center transition-opacity duration-1000">
+        <div class="max-w-xl mx-auto p-8 rounded-3xl glass-card relative border border-roseGold/30">
+            <!-- Decorative Ribbon -->
+            <div class="inline-block px-4 py-1 mb-6 rounded-full border border-passionPink/40 bg-passionPink/10 text-roseGold text-xs tracking-widest font-kufi">
+                🎬 العرض السينمائي الخاص
+            </div>
+
+            <h1 class="font-amiri text-4xl sm:text-5xl font-bold text-passionPink mb-4 leading-tight text-glow-pink">
+                قصة حب فرح وأحمد
+            </h1>
+
+            <p class="text-gray-300 text-sm sm:text-base leading-relaxed mb-8 font-light">
+                هذا الموقع ليس مجرد كلمات... بل هو فيلم توثيقي لنبضات قلب اختاركِ لتكوني دنيته، ابنته المدللة، وأم عياله المستقبليين.
+            </p>
+
+            <!-- Cinematic Enter Button -->
+            <button onclick="startMovieExperience()" class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-300 bg-gradient-to-r from-deepCrimson via-passionPink to-roseGold rounded-full shadow-2xl hover:scale-105 active:scale-95 focus:outline-none overflow-hidden">
+                <span class="absolute w-0 h-0 transition-all duration-500 ease-out bg-white opacity-20 rounded-full group-hover:w-56 group-hover:h-56"></span>
+                <i class="fa-solid fa-film ml-3 text-xl group-hover:rotate-12 transition-transform"></i>
+                <span class="font-bold tracking-wide">دخول السينما (ابدأ الحكاية)</span>
+            </button>
+            
+            <p class="text-xs text-gray-400 mt-4 italic">
+                💡 يفضل تشغيل الصوت واسترخاء العيون لمشاهدة الفيلم
+            </p>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- OVERTURE 2: 35-SECOND CINEMATIC PRELUDE    -->
+    <!-- ========================================== -->
+    <div id="preludeOverlay" class="fixed inset-0 z-40 flex flex-col justify-between items-center bg-black/95 px-6 py-12 text-center hidden">
+        <!-- Top Title -->
+        <div class="mt-6 space-y-2">
+            <span class="text-roseGold text-xs tracking-widest uppercase font-kufi">مشهد الافتتاح</span>
+            <h2 class="font-amiri text-3xl sm:text-4xl text-white font-bold text-glow-gold">
+                تبدأ الحكاية...
+            </h2>
+        </div>
+
+        <!-- Center Suspense Quotes (Changes during countdown) -->
+        <div class="max-w-2xl my-auto px-4">
+            <div id="preludeQuoteBox" class="quote-pulse transition-all duration-1000 min-h-[120px] flex flex-col justify-center items-center">
+                <i class="fa-solid fa-quote-right text-3xl text-passionPink/40 mb-4"></i>
+                <p id="preludeQuote" class="font-amiri text-xl sm:text-2xl text-roseGold leading-relaxed">
+                    "استمعي لنغمات الموسيقى... أغمضي عينيكِ للحظات، فالكلام الأعظم في قلبي يستعد للظهور."
+                </p>
+            </div>
+        </div>
+
+        <!-- Bottom Timeline & Countdown Progress -->
+        <div class="w-full max-w-xl mb-6 space-y-3">
+            <div class="flex justify-between items-center text-xs text-gray-400 font-mono px-1">
+                <span>تهيئة شريط الذكريات</span>
+                <span id="countdownText" class="text-passionPink font-bold text-sm">35 ثانية</span>
+            </div>
+            <!-- Progress Bar -->
+            <div class="w-full bg-neutral-900 h-2 rounded-full overflow-hidden border border-white/10 relative">
+                <div id="preludeProgressBar" class="progress-line h-full bg-gradient-to-r from-passionPink via-roseGold to-white w-0 shadow-lg"></div>
+            </div>
+            <p class="text-[11px] text-gray-500 italic">سيبدأ العرض وسرد القصة تلقائياً فور انتهاء العد</p>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MAIN MOVIE / NARRATIVE STORY CONTENT       -->
+    <!-- ========================================== -->
+    <main id="mainStory" class="relative z-10 max-w-4xl mx-auto px-4 py-16 opacity-0 transition-opacity duration-1000 hidden">
+        
+        <!-- Header Ribbon & Title -->
+        <header class="text-center mb-20 space-y-6">
+            <div class="inline-flex items-center space-x-2 space-x-reverse px-5 py-2 rounded-full bg-passionPink/10 border border-passionPink/30 text-roseGold text-sm font-semibold">
+                <i class="fa-solid fa-heart text-passionPink animate-pulse"></i>
+                <span>حكاية عشق أبدية من أحمد إلى فرح</span>
+            </div>
+            
+            <h1 class="font-amiri text-5xl sm:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-roseGold via-passionPink to-white leading-tight">
+                فرح.. أنتِ الحياة
+            </h1>
+            
+            <p class="text-gray-400 text-lg font-light max-w-2xl mx-auto">
+                اقرئي كل سطر بهدوء، كأنني أجلس بجانبكِ، أهسِسُ لكِ بكل كلمة خرجت من أعمق نقطة في قلبي.
+            </p>
+
+            <div class="w-24 h-1 bg-gradient-to-r from-transparent via-passionPink to-transparent mx-auto rounded-full"></div>
+        </header>
+
+        <!-- TIMED CHAPTERS NARRATIVE CONTAINER -->
+        <div class="space-y-24" id="chaptersContainer">
+
+            <!-- CHAPTER 1 -->
+            <article class="chapter-card glass-card p-8 sm:p-12 rounded-3xl relative overflow-hidden transition-all duration-1000 transform translate-y-12 opacity-0" id="chap1">
+                <div class="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-roseGold to-passionPink"></div>
+                
+                <div class="flex items-center space-x-3 space-x-reverse mb-6">
+                    <span class="w-10 h-10 rounded-full bg-passionPink/20 border border-passionPink/50 text-passionPink flex items-center justify-center font-bold text-lg">١</span>
+                    <h2 class="font-amiri text-2xl sm:text-3xl text-roseGold font-bold">الفصل الأول: دخولكِ الذي غيّر مجرى الكون</h2>
+                </div>
+
+                <div class="space-y-6 text-gray-200 text-base sm:text-lg leading-loose font-light">
+                    <p>
+                        لم تكن لحظة معرفتي بكِ يا فرح مجرد تاريخ عابر في تقويمي، بل كانت النقطة الفاصلة التي قسمت حياتي إلى عصرين: عصر ما قبل عينيكِ حيث الكركبة والتخبط، وعصر ما بعدكِ حيث الاستقرار والسكن.
+                    </p>
+                    <p>
+                        دخلتِ إلى أيامي بهدوء تشبهين الفجر، وبقوة تغيرين بها كل المسارات. قبل أن أعرفكِ، كنت أظن أن الحب مجرد مجاملات أو كلمات تُكتب على الورق، لكن حين أشرقتِ في عالمي، علمتُ أن الحب هو روح تملأ مكانكِ، ونبض يطمئنكِ بأنك أخيرًا وصلت إلى وطنك.
+                    </p>
+                    <p class="italic text-roseGold/90 bg-black/30 p-4 rounded-2xl border-r-2 border-roseGold font-amiri text-xl">
+                        "كل تفصيلة فيكِ؛ ابتسامتكِ العفوية، طريقة حديثكِ، حنيتكِ التي تتسرب دون استئذان... كل ذلك كان يخبرني في كل ثانية: هذه هي فرح، فرحة عمرك المقدرة."
+                    </p>
+                </div>
+            </article>
+
+            <!-- CHAPTER 2: BNTI & OM EYALI -->
+            <article class="chapter-card glass-card p-8 sm:p-12 rounded-3xl relative overflow-hidden transition-all duration-1000 transform translate-y-12 opacity-0" id="chap2">
+                <div class="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-passionPink to-deepCrimson"></div>
+                
+                <div class="flex items-center space-x-3 space-x-reverse mb-6">
+                    <span class="w-10 h-10 rounded-full bg-passionPink/20 border border-passionPink/50 text-passionPink flex items-center justify-center font-bold text-lg">٢</span>
+                    <h2 class="font-amiri text-2xl sm:text-3xl text-passionPink font-bold">الفصل الثاني: أنتِ بنتي الصغيرة.. وأم عيالي</h2>
+                </div>
+
+                <div class="space-y-6 text-gray-200 text-base sm:text-lg leading-loose font-light">
+                    <p>
+                        حين يناديكِ قلبي <strong class="text-roseGold font-semibold">"يا بنتي"</strong>، فأنا لا أقولها لمجرد الدلع، بل أعني كل حرف فيها. أنتِ طفلتي الصغيرة التي أخاف عليها من نسمة الهواء، أراقب ضحكتكِ برغبة عارمة في أن أحميكِ من كل حزن أو تعب في هذا العالم. أحب أن أكون لكِ الأمان، السند، الظهر الذي لا يميل، والأب الذي يرى في عيون طفلته أعظم إنجازاته.
+                    </p>
+                    <p>
+                        وحين يناديكِ عقلي وتتطلع أيامي إليكِ بـ <strong class="text-passionPink font-semibold">"أم عيالي"</strong>، ينبض صدري بخرير الدفء. أتخيل مستقبلاً يبدأ بكِ وينتهي عندكِ. أتخيل بيتنا الصغير، وصوت ضحكاتكِ التي تملأ الأركان، وأطفالنا الذين سيرثون منكِ جمال عينيكِ، حنيتكِ، ورقة قلبكِ.
+                    </p>
+
+                    <!-- Highlight Quote Banner -->
+                    <div class="my-8 p-6 rounded-2xl bg-gradient-to-r from-deepCrimson/30 via-passionPink/20 to-transparent border border-passionPink/40 text-center space-y-3">
+                        <i class="fa-solid fa-crown text-3xl text-roseGold"></i>
+                        <p class="font-amiri text-2xl text-white font-bold leading-relaxed">
+                            "أعدكِ أمام الله وأمام الدنيا أن أكون لكِ زوجاً، وأباً، وصديقاً، وحبيباً لا يكتفي منكِ أبد الدهر."
+                        </p>
+                    </div>
+
+                    <p>
+                        أنتِ المرأة الوحيدة التي اختارها قلبي لتكون شريكة الدرب، وسيدة البيت، وقرة العين. وجودكِ معي يمنحني الشجاعة لأواجه أي شيء، لأنني أعلم أن نهاية كل يوم ستكون بين يديكِ.
+                    </p>
+                </div>
+            </article>
+
+            <!-- CHAPTER 3: BOUNDLESS LOVE -->
+            <article class="chapter-card glass-card p-8 sm:p-12 rounded-3xl relative overflow-hidden transition-all duration-1000 transform translate-y-12 opacity-0" id="chap3">
+                <div class="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-roseGold via-white to-passionPink"></div>
+                
+                <div class="flex items-center space-x-3 space-x-reverse mb-6">
+                    <span class="w-10 h-10 rounded-full bg-passionPink/20 border border-passionPink/50 text-passionPink flex items-center justify-center font-bold text-lg">٣</span>
+                    <h2 class="font-amiri text-2xl sm:text-3xl text-roseGold font-bold">الفصل الثالث: بحبك قد إيه؟ كلام أعمق من المعاجم</h2>
+                </div>
+
+                <div class="space-y-6 text-gray-200 text-base sm:text-lg leading-loose font-light">
+                    <p>
+                        لو كان باستطاعتي لفرشتُ لكِ النجوم طريقاً، ولو كان الحب يُقاس بالأوزان لثقُلت كفة حبكِ بجميع موازين الأرض. بحبك جداً جداً جداً.. بقدر كل مرة فكرت فيكِ وابتسمت دون أن أشاعر، بقدر كل دعوة خرجت من قلبي في أن يحفظكِ الله لي ولا يحرمني من وجودكِ.
+                    </p>
+                    <p>
+                        أنتِ لستِ خياراً ثانياً ولا محاولة عابرة؛ أنتِ البداية والنهاية. أنتِ الشخص الذي أدعو الله دائماً ألا أراني بدونه. حبكِ في قلبي يزداد مع كل إشراقة شمس، وينضج مع كل موقف نتشاركه.
+                    </p>
+                    <p>
+                        أتعهد لكِ أن أظل متمسكاً بكِ، أن أحترم عقلكِ، وأحتوي قلبكِ، وأكون لكِ الملجأ عندما يضيق العالم. سنبني حكايتنا خطوة بخطوة، وستظل قصتنا أجمل فيلم أعيشه كل يوم.
+                    </p>
+                </div>
+            </article>
+
+            <!-- FINAL LOVE LETTER / REPLAY -->
+            <div class="text-center space-y-8 pt-10 border-t border-roseGold/20" id="finalSection">
+                <div class="inline-block p-4 rounded-full bg-roseGold/10 border border-roseGold/30">
+                    <i class="fa-solid fa-heart text-4xl text-passionPink animate-bounce"></i>
+                </div>
+                <h3 class="font-amiri text-3xl sm:text-4xl text-white font-bold">
+                    بحبك يا أحلى "فرح" في حياتي
+                </h3>
+                <p class="text-gray-400 font-light text-sm sm:text-base">
+                    تم إنشاء هذه الحكاية السينمائية بكامل الحب والوفاء من: <br>
+                    <span class="font-bold text-roseGold text-lg font-amiri">أحمد مصطفى ❤️</span>
+                </p>
+
+                <!-- Action Controls -->
+                <div class="flex flex-wrap justify-center gap-4 pt-4">
+                    <button onclick="replayMovie()" class="px-6 py-3 rounded-full border border-passionPink text-passionPink hover:bg-passionPink hover:text-white transition-colors duration-300 flex items-center space-x-2 space-x-reverse font-semibold">
+                        <i class="fa-solid fa-rotate-right"></i>
+                        <span>إعادة تشغيل الفيلم من البداية</span>
+                    </button>
+                    <button onclick="spawnHeartRain()" class="px-6 py-3 rounded-full bg-gradient-to-r from-passionPink to-roseGold text-white font-semibold shadow-lg hover:opacity-90 transition-opacity flex items-center space-x-2 space-x-reverse">
+                        <i class="fa-solid fa-sparkles"></i>
+                        <span>إمطار قلوب لحبيبتي فرح 💕</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- JAVASCRIPT LOGIC & ANIMATIONS              -->
+    <!-- ========================================== -->
+    <script>
+        /* Global State Variables */
+        let audioContext = null;
+        let isAudioPlaying = false;
+        let countdownTimer = null;
+        let remainingSeconds = 35;
+        const totalPreludeTime = 35;
+
+        // Dynamic Prelude Quotes Array to cycle during the 35s delay
+        const preludeQuotes = [
+            "\"استمعي لنغمات الموسيقى... أغمضي عينيكِ للحظات، فالكلام الأعظم في قلبي يستعد للظهور.\"",
+            "\"كل ثانية تمر في هذا العد... كانت خطوة من عمري أتقرب بها لإيجادكِ يا فرح.\"",
+            "\"35 ثانية لتهيئة شريط ذكرياتنا... تجهزي لقرأة حكاية صممت لروحكِ الجميلة.\"",
+            "\"لأنكِ طفلتي المدللة وأم عيالي... لا يكفيكِ مجرد كلام عابر، بل فيلم يخلد حبنا.\"",
+            "\"لحظات قليلة وينفتح الستار عن أصدق مشاعر كتبها أحمد لأجلكِ...\""
+        ];
+
+        /* HTML Elements */
+        const mainAudio = document.getElementById('mainAudio');
+        const audioWidget = document.getElementById('audioWidget');
+        const audioIcon = document.getElementById('audioIcon');
+        const audioStatusText = document.getElementById('audioStatusText');
+        const coverOverlay = document.getElementById('coverOverlay');
+        const preludeOverlay = document.getElementById('preludeOverlay');
+        const preludeProgressBar = document.getElementById('preludeProgressBar');
+        const countdownText = document.getElementById('countdownText');
+        const preludeQuote = document.getElementById('preludeQuote');
+        const mainStory = document.getElementById('mainStory');
+
+        /* 1. AUDIO SYSTEM & SYNTHESIZER FALLBACK */
+        function initAudioSystem() {
+            mainAudio.volume = 0.8;
+            
+            // Try standard Play
+            const playPromise = mainAudio.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    isAudioPlaying = true;
+                    updateAudioUI(true);
+                }).catch(error => {
+                    console.log("External audio failed or blocked, activating Web Audio Synthesizer fallback.");
+                    startWebAudioSynthesizer();
+                });
+            }
+        }
+
+        // Web Audio API Ambient Pad Synth in case MP3 streams fail
+        function startWebAudioSynthesizer() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioContext = new AudioContext();
+                
+                const osc1 = audioContext.createOscillator();
+                const osc2 = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                osc1.type = 'sine';
+                osc2.type = 'triangle';
+                
+                // Warm romantic chord notes (A3 / E4)
+                osc1.frequency.setValueAtTime(220, audioContext.currentTime); 
+                osc2.frequency.setValueAtTime(329.63, audioContext.currentTime); 
+
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+
+                osc1.connect(gainNode);
+                osc2.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                osc1.start();
+                osc2.start();
+
+                isAudioPlaying = true;
+                updateAudioUI(true, "نغمة سينمائية 🎵");
+            } catch (e) {
+                console.error("Web Audio API not supported", e);
+            }
+        }
+
+        function toggleAudio() {
+            if (isAudioPlaying) {
+                if (mainAudio) mainAudio.pause();
+                if (audioContext && audioContext.state === 'running') audioContext.suspend();
+                isAudioPlaying = false;
+                updateAudioUI(false);
+            } else {
+                if (mainAudio && mainAudio.src) {
+                    mainAudio.play().catch(() => startWebAudioSynthesizer());
+                } else {
+                    startWebAudioSynthesizer();
+                }
+                if (audioContext && audioContext.state === 'suspended') audioContext.resume();
+                isAudioPlaying = true;
+                updateAudioUI(true);
+            }
+        }
+
+        function changeVolume(val) {
+            if (mainAudio) mainAudio.volume = val;
+        }
+
+        function updateAudioUI(playing, label = "شغالة الآن 🎵") {
+            if (playing) {
+                audioIcon.className = "fa-solid fa-pause";
+                audioStatusText.innerText = label;
+                audioWidget.classList.remove('opacity-0');
+            } else {
+                audioIcon.className = "fa-solid fa-play";
+                audioStatusText.innerText = "متوقفة ⏸️";
+            }
+        }
+
+        /* 2. MOVIE EXPERIENCE START & 35s PRELUDE TIMELINE */
+        function startMovieExperience() {
+            // Audio Initialization on user gesture
+            initAudioSystem();
+
+            // Fade out Landing Cover
+            coverOverlay.classList.add('opacity-0');
+            setTimeout(() => {
+                coverOverlay.classList.add('hidden');
+                // Show Prelude Overlay
+                preludeOverlay.classList.remove('hidden');
+                runPreludeCountdown();
+            }, 1000);
+        }
+
+        function runPreludeCountdown() {
+            remainingSeconds = totalPreludeTime;
+            let quoteIndex = 0;
+
+            countdownTimer = setInterval(() => {
+                remainingSeconds--;
+                
+                // Update Progress percentage
+                const elapsed = totalPreludeTime - remainingSeconds;
+                const percentage = (elapsed / totalPreludeTime) * 100;
+                preludeProgressBar.style.width = percentage + "%";
+                countdownText.innerText = remainingSeconds + " ثانية";
+
+                // Rotate Quotes every 7 seconds
+                if (elapsed % 7 === 0 && quoteIndex < preludeQuotes.length - 1) {
+                    quoteIndex++;
+                    preludeQuote.style.opacity = '0';
+                    setTimeout(() => {
+                        preludeQuote.innerText = preludeQuotes[quoteIndex];
+                        preludeQuote.style.opacity = '1';
+                    }, 500);
+                }
+
+                // Finish Prelude & Launch Narrative
+                if (remainingSeconds <= 0) {
+                    clearInterval(countdownTimer);
+                    revealMainNarrative();
+                }
+            }, 1000);
+        }
+
+        /* 3. REVEAL MAIN NARRATIVE & TIMED CHAPTER ANIMATION */
+        function revealMainNarrative() {
+            preludeOverlay.classList.add('opacity-0');
+            setTimeout(() => {
+                preludeOverlay.classList.add('hidden');
+                
+                // Reveal Main Story Shell
+                mainStory.classList.remove('hidden');
+                setTimeout(() => {
+                    mainStory.classList.remove('opacity-0');
+                    // Sequentially reveal story chapters with elegant timing
+                    revealChapter('chap1', 200);
+                    revealChapter('chap2', 1500);
+                    revealChapter('chap3', 2800);
+                }, 100);
+
+            }, 1000);
+        }
+
+        function revealChapter(elementId, delay) {
+            setTimeout(() => {
+                const el = document.getElementById(elementId);
+                if (el) {
+                    el.classList.remove('translate-y-12', 'opacity-0');
+                    el.classList.add('translate-y-0', 'opacity-100');
+                }
+            }, delay);
+        }
+
+        function replayMovie() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            mainStory.classList.add('opacity-0');
+            setTimeout(() => {
+                mainStory.classList.add('hidden');
+                preludeOverlay.classList.remove('hidden', 'opacity-0');
+                
+                // Reset chapter states
+                ['chap1', 'chap2', 'chap3'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('translate-y-12', 'opacity-0');
+                });
+
+                runPreludeCountdown();
+            }, 800);
+        }
+
+        /* 4. CANVAS INTERACTIVE PARTICLES & FLOATING HEARTS */
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let particles = [];
+        let hearts = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = (Math.random() - 0.5) * 0.4;
+                this.speedY = -Math.random() * 0.5 - 0.2;
+                this.opacity = Math.random() * 0.6 + 0.2;
+                this.color = Math.random() > 0.5 ? '#ff4d6d' : '#e0a96d';
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.y < 0 || this.x < 0 || this.x > canvas.width) {
+                    this.reset();
+                    this.y = canvas.height;
+                }
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class FloatingHeart {
+            constructor(x, y) {
+                this.x = x || Math.random() * canvas.width;
+                this.y = y || canvas.height + 20;
+                this.size = Math.random() * 14 + 10;
+                this.speedY = -Math.random() * 1.5 - 0.8;
+                this.speedX = (Math.random() - 0.5) * 0.8;
+                this.opacity = 1;
+                this.color = '#ff4d6d';
+            }
+            update() {
+                this.y += this.speedY;
+                this.x += this.speedX;
+                this.opacity -= 0.005;
+            }
+            draw() {
+                if (this.opacity <= 0) return;
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.opacity);
+                ctx.fillStyle = this.color;
+                ctx.font = `${this.size}px FontAwesome`;
+                ctx.fillText('❤️', this.x, this.y);
+                ctx.restore();
+            }
+        }
+
+        // Initialize background ambient light particles
+        for (let i = 0; i < 70; i++) {
+            particles.push(new Particle());
+        }
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw & Update Light Dust
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            // Draw & Update Hearts
+            for (let i = hearts.length - 1; i >= 0; i--) {
+                hearts[i].update();
+                hearts[i].draw();
+                if (hearts[i].opacity <= 0) {
+                    hearts.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(animateCanvas);
+        }
+        animateCanvas();
+
+        // Spawn multiple floating hearts on demand button
+        function spawnHeartRain() {
+            for (let i = 0; i < 25; i++) {
+                setTimeout(() => {
+                    hearts.push(new FloatingHeart());
+                }, i * 80);
+            }
+        }
+
+        // Spawn heart on user touch / click interaction anywhere on screen
+        window.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+                hearts.push(new FloatingHeart(e.clientX, e.clientY));
+            }
+        });
+    </script>
+</body>
+</html>
